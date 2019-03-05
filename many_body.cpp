@@ -14,10 +14,15 @@
 #define delta_t 0.01
 #define radius 0.5
 #define timestep 100//720000
-#define R_array false
-#define F_array true
+#define R_array true
+#define F_array false
 
 using namespace std;
+
+float euclidean(double x1, double y1, double z1, double x2, double y2, double z2){
+
+	return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2));
+}
 
 void find_force(double **F,double **R)    
 {
@@ -28,7 +33,7 @@ void find_force(double **F,double **R)
      	x=y=z=0.0;
      	for(j=0;j<number_bodies; j++)
         {
-        	dis=sqrt((R[j][0]-R[i][0])*(R[j][0]-R[i][0]) + (R[j][1]-R[i][1])*(R[j][1]-R[i][1]) + (R[j][2]-R[i][2])*(R[j][2]-R[i][2]));
+        	dis = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
         	if(dis!=0)
         	{
         	x=x+(R[j][0]-R[i][0])/dis;
@@ -55,16 +60,35 @@ void velocity_update(double **F,double **V)
 
 void collision_and_position_update(double **R,double **V)
 {
-    
-	////////////////position update if no collision//////////
+    //////Inter-Collision Check////////////
+
+	//////position update//////////
     int i;
     for(i=0;i<number_bodies;i++)
     {
     	R[i][0] += V[i][0]*delta_t;
     	R[i][1] += V[i][1]*delta_t;
     	R[i][2] += V[i][2]*delta_t;
+
+    	/////Boundary Collision Check/////
+    	if( R[i][0] >= breadth || R[i][0] <= 0)
+    	{	
+    		R[i][0] = (R[i][0] <= 0)?(-R[i][0]) : (2*breadth - R[i][0]);
+    		V[i][0] = -V[i][0];
+    	}
+    	if( R[i][1] >= length || R[i][1] <= 0)
+    	{	
+    		R[i][1] = (R[i][1] <= 0)?(-R[i][1]) : (2*length - R[i][1]);
+    		V[i][1] = -V[i][1];
+    	}
+    	if( R[i][2] >= height || R[i][2] <= 0)
+    	{	
+    		R[i][2] = (R[i][2] <= 0)?(-R[i][2]) : (2*height - R[i][2]);
+    		V[i][2] = -V[i][2];
+    	}
+    	/////////////////////////////////
+
     }
-    ///////////////////////////////////
 }
 
 void generate_bin_file(double **R,int num)
@@ -126,10 +150,10 @@ void print_2d(bool f,bool r,double **R,double **F)
 int main()
 {
 	int i;
-    ////////////////initialise position array////////////////
+    ////////////////initialise Position matrix////////////////
     double **R;
     R = (double**)malloc(sizeof(double*)*1000);
-    for(int i = 0; i <1000; i++)
+    for(i = 0; i <1000; i++)
         R[i] = (double*)malloc(sizeof(double)*3);
     read_txt_file(R);
     ///////////////////////////////////////////////////////
@@ -137,28 +161,34 @@ int main()
     ///////////////Initialise Force matrix////////////////
     double **F;
     F = (double**)malloc(sizeof(double*)*1000);
-    for(int i = 0; i <1000; i++)
+    for( i = 0; i <1000; i++)
         F[i] = (double*)malloc(sizeof(double)*3);
     ///////////////////////////////////////////////////////
 
-    ///////////////Initialise Velocity matrix////////////////
+    ///Initialise Velocity matrix assuming intial rest conditions///
     double **V;
     V = (double**)calloc(1000, sizeof(double*));
-    for(int i = 0; i <1000; i++)
+    for( i = 0; i <1000; i++)
         V[i] = (double*)calloc(3, sizeof(double));
     ///////////////////////////////////////////////////////
 
 
-	for(int i = 0 ;i <timestep ; i++){
+	for( i = 0 ;i <timestep ; i++){
+		
 		find_force(F,R);
+		
 		velocity_update(F,V);
+		
 		collision_and_position_update(R,V);
+		
 		velocity_update(F,V);
+		
 		if(i%100 == 0)
         {
             generate_bin_file(R,i);
         }
 	}
+    
     if(R_array || F_array){ //set R_array to view initial matrix
         print_2d(R_array,F_array,R,F);
     }
