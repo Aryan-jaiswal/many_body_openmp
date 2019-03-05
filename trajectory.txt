@@ -1,11 +1,3 @@
-Container length (in m) = 100
-Container width (in m) = 200
-Container depth (in m) = 400
-Total number of bodies = 1000
-Body radius (in m) = 0.5
-Body mass (in Kg) = 1
-Time step for running simulation (dt) (in secs) = 0.01
-Initial coordinates =
 62.47	87.05	243.88
 61.46	96.3	76.17
 24.6	85.24	235.96
