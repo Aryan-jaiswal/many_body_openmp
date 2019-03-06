@@ -16,7 +16,7 @@
 #define height 400
 #define delta_t 0.01
 #define radius 0.5
-#define timestep 20000
+#define timestep 101//720000
 ////////////////////////////////////
 
 #define print_pose false
@@ -224,38 +224,48 @@ void read_txt_file(double **R){
 int main()
 {
 	int i;
-
+    double **R,**F,**V,**D;
 	///Divide each initialissation into sections in openmp///////
+    #pragma omp parallel sections num_threads(4) private(i)
+    {
+        #pragma omp section
+        {
+         ////////////////initialise Position matrix////////////////
+            
+            R = (double**)malloc(sizeof(double*)*1000);
+            for(i = 0; i <1000; i++)
+                R[i] = (double*)malloc(sizeof(double)*3);
+            read_txt_file(R);
+        /////////////////////////////////////////////////////////
+        }
 
-    ////////////////initialise Position matrix////////////////
-    double **R;
-    R = (double**)malloc(sizeof(double*)*1000);
-    for(i = 0; i <1000; i++)
-        R[i] = (double*)malloc(sizeof(double)*3);
-    read_txt_file(R);
-    ///////////////////////////////////////////////////////
+        #pragma omp section
+        {
+            ///////////////Initialise Force matrix////////////////
+            F = (double**)malloc(sizeof(double*)*1000);
+            for( i = 0; i <1000; i++)
+                F[i] = (double*)malloc(sizeof(double)*3);
+            ///////////////////////////////////////////////////////
+        }
+        #pragma omp section
+        {
+            ///Initialise Velocity matrix assuming intial rest conditions///
+            V = (double**)calloc(1000, sizeof(double*));
+            for( i = 0; i <1000; i++)
+                V[i] = (double*)calloc(3, sizeof(double));
+            ///////////////////////////////////////////////////////
+        }
 
-    ///////////////Initialise Force matrix////////////////
-    double **F;
-    F = (double**)malloc(sizeof(double*)*1000);
-    for( i = 0; i <1000; i++)
-        F[i] = (double*)malloc(sizeof(double)*3);
-    ///////////////////////////////////////////////////////
-
-    ///Initialise Velocity matrix assuming intial rest conditions///
-    double **V;
-    V = (double**)calloc(1000, sizeof(double*));
-    for( i = 0; i <1000; i++)
-        V[i] = (double*)calloc(3, sizeof(double));
-    ///////////////////////////////////////////////////////
-
-    ////////////////Initialise Distance matrix//////////////
-    double **D;
-    D = (double**)malloc(sizeof(double*)*1000);
-    for(i = 0; i <1000; i++)
-        D[i] = (double*)malloc(sizeof(double)*1000);
-    initialise_distance(D);
-    ///////////////////////////////////////////////////////
+        #pragma omp section
+        {
+            ////////////////Initialise Distance matrix//////////////
+            D = (double**)malloc(sizeof(double*)*1000);
+            for(i = 0; i <1000; i++)
+                D[i] = (double*)malloc(sizeof(double)*1000);
+            initialise_distance(D);
+            ///////////////////////////////////////////////////////
+        }
+    }
 
 
 	for( i = 0 ;i <timestep ; i++){
@@ -282,19 +292,6 @@ int main()
 	return 0;
 }
 
-/*int main()
-{
-	double R[3][3]={{1,2,3},{3,2,1},{2,1,3}};
-	double F[3][3]={0};
-
-    find_force(F,R,3);
-	for(int i=0;i<3;i++)
-	{
-		cout << F[i][0] << " " << F[i][1] << " " << F[i][2] << "\n";
-	}
-	generate_bin_file(R,1,3);
-    return 0;
-}*/
 
 
 
