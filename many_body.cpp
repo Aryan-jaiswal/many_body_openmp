@@ -7,6 +7,8 @@
 #include <omp.h>
 
 #define ll long long int
+
+/////System Configuration//////////
 #define number_bodies 1000
 #define mass 1
 #define length 100
@@ -14,7 +16,9 @@
 #define height 400
 #define delta_t 0.01
 #define radius 0.5
-#define timestep 101//720000
+#define timestep 20000
+////////////////////////////////////
+
 #define print_pose false
 #define print_force false
 #define print_distance false
