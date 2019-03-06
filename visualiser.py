@@ -6,13 +6,11 @@ import numpy as np
 import pygame
 import time
 
-def get_trajectory(filename): # = "trajectory0.bin"
+def get_trajectory(filename): 
     data =[]
     with open(filename) as input_file:
         try:
-            lin_num = 0
             for line in input_file:
-                word_num = 0
                 line = line.strip()
                 for number in line.split():
                     data.append(float(number))
