@@ -47,7 +47,7 @@ void find_force(double **F,double **R)
      ll i,j;
      double x,y,z,dis;
 
-     #pragma omp parallel for private(j,dis) reduction(+:x,y,z) 
+     #pragma omp parallel for schedule(guided) private(j,dis) reduction(+:x,y,z) 
      for(i=0;i<number_bodies;i++)
      {
      	x=y=z=0.0;
@@ -71,7 +71,7 @@ void velocity_update(double **F,double **V)
 {
     int i;
 
-    #pragma omp parallel for private(i) 
+    #pragma omp parallel for private(i) schedule(guided)
     for(i=0;i<number_bodies;i++)
     {
     	V[i][0] = V[i][0]+(F[i][0]*delta_t)/(2.0*mass);
@@ -284,7 +284,10 @@ int main()
 
 	for( i = 0 ;i <timestep ; i++){ //has to be sequential
 		
+        double wtime=omp_get_wtime();
 		find_force(F,R);
+        cout << (omp_get_wtime()-wtime) << "\n";
+        cout << F[0][0] << " " << F[0][1] << " " << F[0][2] << "\n";
 		
 		velocity_update(F,V);
 		
