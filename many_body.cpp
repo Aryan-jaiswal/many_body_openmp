@@ -24,6 +24,7 @@
 #define print_distance false
 #define DOUBLE_MAX 999999.99
 #define COLLISION_CHECK
+//#define OPENMP
 
 using namespace std;
 
@@ -45,6 +46,8 @@ void find_force(double **F,double **R)
 {
      ll i,j;
      double x,y,z,dis;
+
+     #pragma omp parallel for private(j,dis) reduction(+:x,y,z) 
      for(i=0;i<number_bodies;i++)
      {
      	x=y=z=0.0;
@@ -67,6 +70,8 @@ void find_force(double **F,double **R)
 void velocity_update(double **F,double **V)
 {
     int i;
+
+    #pragma omp parallel for private(i) 
     for(i=0;i<number_bodies;i++)
     {
     	V[i][0] = V[i][0]+(F[i][0]*delta_t)/(2.0*mass);
@@ -78,6 +83,8 @@ void velocity_update(double **F,double **V)
 void initialise_distance(double **D)
 {
 	int i = 0 , j = 0;
+
+    #pragma omp parallel for collapse(2)
 	for( i = 0 ; i < 1000; i++)
 		for ( j = 0 ; j < 1000 ; j++)
 			D[i][j] = DOUBLE_MAX;
@@ -91,6 +98,7 @@ void compute_distance(double **D, double **R , double **V)
 
 	#ifndef OPENMP
 	{
+        //#pragma omp parallel for private(j)  //-gives somewhat similar results but some values aren't macthing
 		for( i = 0 ; i < 1000; i++)
 			for ( j = i+1 ; j < 1000 ; j++)
 			{
@@ -113,16 +121,17 @@ void compute_distance(double **D, double **R , double **V)
 	#endif
 
 	#ifdef OPENMP
-	{
+	{  
+        //#pragma omp parallel for private(i,j) //--yiels wrong result
 		for( i = 0 ; i < 1000; i++)
 		{
 			for ( j = 0 ; j < 1000 ; j++)
 			{
 				if( i!=j) //check if it will work upon parallezing 
-					D[i][j] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
+				D[i][j] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
 
 				////////Updating Position and Velocity if distance is less than tolerance////
-				if(D[i][j] <= tolerance)
+                if(D[i][j] <= tolerance)
 				{
 					V[i][0] = V[j][0];
 					V[i][1] = V[j][1];
@@ -145,6 +154,8 @@ void collision_and_position_update(double **R,double **V, double **D)
 
 	//////position update//////////
     int i;
+
+    #pragma omp parallel for 
     for(i=0;i<number_bodies;i++)
     {
     	R[i][0] += V[i][0]*delta_t;
@@ -171,10 +182,13 @@ void collision_and_position_update(double **R,double **V, double **D)
     }
     /////////Collision Check between bodies//////////
     	#ifdef COLLISION_CHECK
-    	{
-		    compute_distance(D,R,V);
+    	{  
+        // #pragma omp parallel //---time increases but output is correct
+		// {
+            compute_distance(D,R,V);
 
 			if(print_distance) print_matrix(D);
+       // }
     	}
     	#endif
     /////////////////////////////////////////////////
@@ -268,7 +282,7 @@ int main()
     }
 
 
-	for( i = 0 ;i <timestep ; i++){
+	for( i = 0 ;i <timestep ; i++){ //has to be sequential
 		
 		find_force(F,R);
 		
@@ -280,7 +294,7 @@ int main()
 		
 		if(i%100 == 0)
         {
-            generate_bin_file(R,i);
+            generate_bin_file(R,i); //cannot be parallized
         }
 	}
     
