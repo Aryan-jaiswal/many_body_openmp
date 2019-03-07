@@ -58,13 +58,17 @@ if pygame:
 if mayavi:
     from mayavi import mlab
     from mayavi.mlab import *
+    mlab.figure(1, bgcolor=(1, 1, 1))
     timestep = 0
     while True:    
         
         filename = "trajectory" +str(timestep) + ".bin"
         # Increment timestep
         timestep = timestep + 100
-
         data = get_trajectory(filename)
-        points3d(zip(*data)[0], zip(*data)[1], zip(*data)[2], colormap="copper", scale_factor=.25)
+        points3d(zip(*data)[0], zip(*data)[1], zip(*data)[2], color = (1,0,0), colormap = "bone", scale_factor = 0.9)
+        #quiver3d(zip(*data)[0], zip(*data)[1], zip(*data)[2])
+        #flow(zip(*data)[0], zip(*data)[1], zip(*data)[2])
+        #mesh(zip(*data)[0], zip(*data)[1], zip(*data)[2])
+
         
