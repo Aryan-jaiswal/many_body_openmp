@@ -24,7 +24,7 @@
 #define print_distance false
 #define DOUBLE_MAX 999999.99
 #define COLLISION_CHECK
-//#define OPENMP
+#define OPENMP
 
 using namespace std;
 
@@ -47,7 +47,7 @@ void find_force(double **F,double **R)
      ll i,j;
      double x,y,z,dis;
 
-     #pragma omp parallel for schedule(guided) private(j,dis) reduction(+:x,y,z) 
+     #pragma omp parallel for private(j,dis) schedule(guided) reduction(+:x,y,z) 
      for(i=0;i<number_bodies;i++)
      {
      	x=y=z=0.0;
@@ -97,15 +97,15 @@ void compute_distance(double **D, double **R , double **V)
 	float tolerance = 2*radius;
 
 	#ifndef OPENMP
-	{
-        //#pragma omp parallel for private(j)  //-gives somewhat similar results but some values aren't macthing
-		for( i = 0 ; i < 1000; i++)
+	{ 
+       	for( i = 0 ; i < 1000; i++)
+        {
 			for ( j = i+1 ; j < 1000 ; j++)
 			{
-				D[i][j] = D[j][i] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
+				//D[i][j] = D[j][i] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
 
 				////////Updating Position if distance is less than tolerance////
-				if(D[i][j] <= tolerance)
+				if(euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]) <= tolerance)
 				{
 					V[i][0] = V[j][0];
 					V[i][1] = V[j][1];
@@ -117,28 +117,31 @@ void compute_distance(double **D, double **R , double **V)
 				///////////////////////////////////////////////////
 
 			}
+        }
 	}
 	#endif
 
 	#ifdef OPENMP
 	{  
-        //#pragma omp parallel for private(i,j) //--yiels wrong result
+        #pragma omp parallel for private(i,j) shared(R,V) schedule(dynamic)
 		for( i = 0 ; i < 1000; i++)
 		{
-			for ( j = 0 ; j < 1000 ; j++)
+			for ( j = i+1 ; j < 1000 ; j++)
 			{
-				if( i!=j) //check if it will work upon parallezing 
-				D[i][j] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
+				//if( i!=j) //check if it will work upon parallezing 
+				//D[i][j] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
 
 				////////Updating Position and Velocity if distance is less than tolerance////
-                if(D[i][j] <= tolerance)
+                if(euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]) <= tolerance)
 				{
-					V[i][0] = V[j][0];
+                    
+                    V[i][0] = V[j][0];
 					V[i][1] = V[j][1];
 					V[i][2] = V[j][2];
 					R[i][0] = R[j][0];
 					R[i][1] = R[j][1];
 					R[i][2] = R[j][2];
+                    
 				}
 				///////////////////////////////////////////////////////////////
 			}
@@ -281,13 +284,10 @@ int main()
         }
     }
 
-
+    double wtime=omp_get_wtime();
 	for( i = 0 ;i <timestep ; i++){ //has to be sequential
 		
-        double wtime=omp_get_wtime();
 		find_force(F,R);
-        cout << (omp_get_wtime()-wtime) << "\n";
-        cout << F[0][0] << " " << F[0][1] << " " << F[0][2] << "\n";
 		
 		velocity_update(F,V);
 		
@@ -300,7 +300,7 @@ int main()
             generate_bin_file(R,i); //cannot be parallized
         }
 	}
-    
+    cout << "Iteration Time : " << (omp_get_wtime()-wtime) << "\n";
     if(print_pose) //set print_pose to view initial matrix
         print_matrix(R);
     else if (print_force)
