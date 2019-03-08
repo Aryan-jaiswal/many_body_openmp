@@ -16,7 +16,7 @@
 #define height 400
 #define delta_t 0.01
 #define radius 0.5
-#define timestep 101//720000
+#define timestep 720000
 ////////////////////////////////////
 
 #define print_pose false
@@ -102,17 +102,16 @@ void compute_distance(double **D, double **R , double **V)
         {
 			for ( j = i+1 ; j < 1000 ; j++)
 			{
-				//D[i][j] = D[j][i] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
-
 				////////Updating Position if distance is less than tolerance////
 				if(euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]) <= tolerance)
 				{
-					V[i][0] = V[j][0];
-					V[i][1] = V[j][1];
-					V[i][2] = V[j][2];
-					R[i][0] = R[j][0];
-					R[i][1] = R[j][1];
-					R[i][2] = R[j][2];
+				    swap(V[i][0],V[j][0]);
+                    swap(V[i][1],V[j][1]);
+                    swap(V[i][2],V[j][2]);
+                    swap(R[i][0],R[j][0]);
+                    swap(R[i][1],R[j][1]);
+                    swap(R[i][2],R[j][2]);
+					
 				}
 				///////////////////////////////////////////////////
 
@@ -135,12 +134,13 @@ void compute_distance(double **D, double **R , double **V)
                 if(euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]) <= tolerance)
 				{
                     
-                    V[i][0] = V[j][0];
-					V[i][1] = V[j][1];
-					V[i][2] = V[j][2];
-					R[i][0] = R[j][0];
-					R[i][1] = R[j][1];
-					R[i][2] = R[j][2];
+                    swap(V[i][0],V[j][0]);
+                    swap(V[i][1],V[j][1]);
+                    swap(V[i][2],V[j][2]);
+                    swap(R[i][0],R[j][0]);
+                    swap(R[i][1],R[j][1]);
+                    swap(R[i][2],R[j][2]);
+                    
                     
 				}
 				///////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ void collision_and_position_update(double **R,double **V, double **D)
 	//////position update//////////
     int i;
 
-    #pragma omp parallel for 
+    //#pragma omp parallel for private(i)
     for(i=0;i<number_bodies;i++)
     {
     	R[i][0] += V[i][0]*delta_t;
@@ -166,32 +166,34 @@ void collision_and_position_update(double **R,double **V, double **D)
     	R[i][2] += V[i][2]*delta_t;
 
     	/////Boundary Collision Check/////
-    	if( R[i][0] >= breadth || R[i][0] <= 0)
-    	{	
-    		R[i][0] = (R[i][0] <= 0)?(-R[i][0]) : (2*breadth - R[i][0]);
-    		V[i][0] = -V[i][0];
-    	}
-    	if( R[i][1] >= length || R[i][1] <= 0)
-    	{	
-    		R[i][1] = (R[i][1] <= 0)?(-R[i][1]) : (2*length - R[i][1]);
-    		V[i][1] = -V[i][1];
-    	}
-    	if( R[i][2] >= height || R[i][2] <= 0)
-    	{	
-    		R[i][2] = (R[i][2] <= 0)?(-R[i][2]) : (2*height - R[i][2]);
-    		V[i][2] = -V[i][2];
-    	}
+       // #pragma omp critical
+      //  {
+        	if( R[i][0] >= breadth || R[i][0] <= 0)
+        	{	
+        		R[i][0] = (R[i][0] <= 0)?(-R[i][0]) : (2*breadth - R[i][0]);
+        		V[i][0] = -V[i][0];
+        	}
+        	if( R[i][1] >= length || R[i][1] <= 0)
+        	{	
+        		R[i][1] = (R[i][1] <= 0)?(-R[i][1]) : (2*length - R[i][1]);
+        		V[i][1] = -V[i][1];
+        	}
+        	if( R[i][2] >= height || R[i][2] <= 0)
+        	{	
+        		R[i][2] = (R[i][2] <= 0)?(-R[i][2]) : (2*height - R[i][2]);
+        		V[i][2] = -V[i][2];
+        	}
+       // }
     	/////////////////////////////////
     }
     /////////Collision Check between bodies//////////
     	#ifdef COLLISION_CHECK
     	{  
-        // #pragma omp parallel //---time increases but output is correct
-		// {
+        
             compute_distance(D,R,V);
 
 			if(print_distance) print_matrix(D);
-       // }
+      
     	}
     	#endif
     /////////////////////////////////////////////////
@@ -242,6 +244,10 @@ int main()
 {
 	int i;
     double **R,**F,**V,**D;
+    omp_set_num_threads(8);
+    fstream out;
+    string filename = "sim_log.txt";
+    out.open(filename,ios::out|ios::binary);
 	///Divide each initialissation into sections in openmp///////
     #pragma omp parallel sections num_threads(4) private(i)
     {
@@ -283,10 +289,11 @@ int main()
             ///////////////////////////////////////////////////////
         }
     }
-
+    double wt;
     double wtime=omp_get_wtime();
 	for( i = 0 ;i <timestep ; i++){ //has to be sequential
 		
+        if(i%100 == 0) wt = omp_get_wtime();
 		find_force(F,R);
 		
 		velocity_update(F,V);
@@ -298,9 +305,12 @@ int main()
 		if(i%100 == 0)
         {
             generate_bin_file(R,i); //cannot be parallized
+            out << "Iteration "<<i <<" took "<< (omp_get_wtime()-wt) << "s \n";
         }
 	}
-    cout << "Iteration Time : " << (omp_get_wtime()-wtime) << "\n";
+    out << "Total Iteration Time : " << (omp_get_wtime()-wtime) << "\n";
+    out.close();
+    cout<<"Done!"<<endl;
     if(print_pose) //set print_pose to view initial matrix
         print_matrix(R);
     else if (print_force)
