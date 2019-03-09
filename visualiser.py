@@ -3,9 +3,10 @@
 from numpy import *
 import numpy as np
 import time
+import sys
 
-pygame = 0
-mayavi = 1
+pygame = (int)(sys.argv[1])
+mayavi = abs(pygame-1)
 def get_trajectory(filename): 
     data =[]
     with open(filename) as input_file:
@@ -67,8 +68,5 @@ if mayavi:
         timestep = timestep + 100
         data = get_trajectory(filename)
         points3d(zip(*data)[0], zip(*data)[1], zip(*data)[2], color = (1,0,0), colormap = "bone", scale_factor = 0.9)
-        #quiver3d(zip(*data)[0], zip(*data)[1], zip(*data)[2])
-        #flow(zip(*data)[0], zip(*data)[1], zip(*data)[2])
-        #mesh(zip(*data)[0], zip(*data)[1], zip(*data)[2])
 
         

@@ -1,0 +1,8 @@
+Total time taken for 720000 iterations:
+
+Number of threads       |         Time in seconds(s)
+
+        1               |              18493
+        2               |              10249
+        4               |              5449.1
+        8               |              4997.52

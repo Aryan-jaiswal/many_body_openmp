@@ -128,7 +128,6 @@ void compute_distance(double **D, double **R , double **V)
 			for ( j = i+1 ; j < 1000 ; j++)
 			{
 				//if( i!=j) //check if it will work upon parallezing 
-				//D[i][j] = euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]);
 
 				////////Updating Position and Velocity if distance is less than tolerance////
                 if(euclidean(R[j][0],R[j][1],R[j][2],R[i][0],R[i][1],R[i][2]) <= tolerance)
@@ -207,9 +206,6 @@ void generate_bin_file(double **R,int num)
 	int i;
 	for(i=0 ; i < number_bodies ; i++)
 	{
-		// file.write((char*)&R[i][0],sizeof(R[i][0]));
-		// file.write((char*)&R[i][1],sizeof(R[i][1]));
-		// file.write((char*)&R[i][2],sizeof(R[i][2]));
         file << R[i][0] << " ";
         file << R[i][1] << " ";
         file << R[i][2] <<  " ";
@@ -240,11 +236,12 @@ void read_txt_file(double **R){
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	int i;
     double **R,**F,**V,**D;
-    omp_set_num_threads(8);
+    omp_set_num_threads(stoi(argv[1]));
+    cout << argv[1] << "\n";
     fstream out;
     string filename = "sim_log.txt";
     out.open(filename,ios::out|ios::binary);
@@ -311,9 +308,9 @@ int main()
     out << "Total Iteration Time : " << (omp_get_wtime()-wtime) << "\n";
     out.close();
     cout<<"Done!"<<endl;
-    if(print_pose) //set print_pose to view initial matrix
+    if(print_pose) //set print_pose to view position matrix
         print_matrix(R);
-    else if (print_force)
+    else if (print_force) //set print_pose to view position matrix
     	print_matrix(F);
 
 	return 0;
