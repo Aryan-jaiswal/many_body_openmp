@@ -6,22 +6,22 @@ $sudo apt-get install python-pygame
 
 # For installing mayavi
 
-$sudo easy_install pip
+$sudo easy_install pip<br/>
 $sudo pip install mayavi
 
 We have used pygame for 2d-visualization and mayavi for 3d-visualization.
 It is advised to use 2d-visualization since 3d-visualization is not that good.
 
-#For 2d-visualization:
+#For 2d-visualization:<br/>
 $python2 visualiser.py 1
 
-#For 3d-visualization:
+#For 3d-visualization:<br/>
 $python2 visualiser.py 0
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#For running the program
-$g++ -fopenmp many_body.cpp
+#For running the program<br/>
+$g++ -fopenmp many_body.cpp<br/>
 $./a.out number_of_threads
 
 
